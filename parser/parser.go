@@ -170,3 +170,31 @@ func (p Parser) Comp() (string, error) {
 		return "", errors.New("このコマンドに対応することができません")
 	}
 }
+
+func (p Parser) Jump() (string, error) {
+	isExistJump := strings.Contains(p.command, ";")
+	if !isExistJump {
+		return "000", nil
+	}
+
+	mnemonic := p.command[strings.Index(p.command, ";"):]
+
+	switch mnemonic {
+	case "JGT":
+		return "001", nil
+	case "JEQ":
+		return "010", nil
+	case "JGE":
+		return "011", nil
+	case "JLT":
+		return "100", nil
+	case "JNE":
+		return "101", nil
+	case "JLE":
+		return "110", nil
+	case "JMP":
+		return "111", nil
+	default:
+		return "", errors.New("このコマンドに対応することができません")
+	}
+}
