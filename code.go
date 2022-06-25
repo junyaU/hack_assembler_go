@@ -1,13 +1,65 @@
-package code
+package hack_assembler_go
 
-import "errors"
+import (
+	"errors"
+	"strconv"
+	"strings"
+)
 
 type Code struct {
-	mnemonic string
+	result [][]byte
 }
 
-func (c Code) OutPutDestBinary() (string, error) {
-	switch c.mnemonic {
+func NewCode() *Code {
+	return &Code{}
+}
+
+func (c Code) BinaryResult() [][]byte {
+	return c.result
+}
+
+func (c *Code) WriteACommand(mnemonic string) error {
+	parseNum, err := strconv.ParseInt(mnemonic, 10, 64)
+	if err != nil {
+		return errors.New("failed to read the A command")
+	}
+
+	binary := strconv.FormatInt(parseNum, 2)
+	bitLength := 1
+	paddingZero := strings.Repeat("0", bitLength-len(binary))
+
+	c.result = append(c.result, []byte(paddingZero+binary))
+
+	return nil
+}
+
+func (c *Code) WriteCCommand(dest, comp, jump string) error {
+	destBinary, err := c.outputDestBinary(dest)
+	if err != nil {
+		return errors.New("dest convert error")
+	}
+
+	compBinary, err := c.outputCompBinary(comp)
+	if err != nil {
+		return errors.New("comp convert err")
+	}
+
+	jumpBinary, err := c.outputJumpBinary(jump)
+	if err != nil {
+		return errors.New("jump convert error")
+	}
+
+	prefix := "111"
+
+	c.result = append(c.result, []byte(prefix+compBinary+destBinary+jumpBinary))
+
+	return nil
+}
+
+func (c Code) outputDestBinary(dest string) (string, error) {
+	switch dest {
+	case "":
+		return "000", nil
 	case "M":
 		return "001", nil
 	case "D":
@@ -23,12 +75,12 @@ func (c Code) OutPutDestBinary() (string, error) {
 	case "AMD":
 		return "111", nil
 	default:
-		return "", errors.New("このコマンドに対応することができません")
+		return "", errors.New("this command does not exist")
 	}
 }
 
-func (c Code) OutputCompBinary() (string, error) {
-	switch c.mnemonic {
+func (c Code) outputCompBinary(comp string) (string, error) {
+	switch comp {
 	case "0":
 		return "0101010", nil
 	case "1":
@@ -86,12 +138,14 @@ func (c Code) OutputCompBinary() (string, error) {
 	case "D|M":
 		return "1010101", nil
 	default:
-		return "", errors.New("このコマンドに対応することができません")
+		return "", errors.New("this command does not exist")
 	}
 }
 
-func (c Code) OutputJumpBinary() (string, error) {
-	switch c.mnemonic {
+func (c Code) outputJumpBinary(jump string) (string, error) {
+	switch jump {
+	case "":
+		return "000", nil
 	case "JGT":
 		return "001", nil
 	case "JEQ":
@@ -107,6 +161,6 @@ func (c Code) OutputJumpBinary() (string, error) {
 	case "JMP":
 		return "111", nil
 	default:
-		return "", errors.New("このコマンドに対応することができません")
+		return "", errors.New("this command does not exist")
 	}
 }

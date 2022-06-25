@@ -1,4 +1,4 @@
-package parser
+package hack_assembler_go
 
 import (
 	"bufio"
@@ -37,6 +37,10 @@ func NewParser(f io.Reader) *Parser {
 	}
 }
 
+func (p Parser) Commands() []string {
+	return p.texts
+}
+
 func (p Parser) HasMoreCommands() bool {
 	return len(p.texts) > p.currentLine
 }
@@ -59,7 +63,7 @@ func (p Parser) CommandType() (CommandType, error) {
 	case isCCommand:
 		return C_COMMAND, nil
 	default:
-		return 0, errors.New("存在しないコマンドです")
+		return 0, errors.New("this command does not exist")
 	}
 }
 
@@ -85,7 +89,7 @@ func (p Parser) Dest() string {
 func (p Parser) Comp() string {
 	isExistDest := strings.Contains(p.command, "=")
 	if isExistDest {
-		return p.command[strings.Index(p.command, "="):]
+		return p.command[strings.Index(p.command, "=")+1:]
 	}
 
 	return p.command[:strings.Index(p.command, ";")]
@@ -97,5 +101,5 @@ func (p Parser) Jump() string {
 		return ""
 	}
 
-	return p.command[strings.Index(p.command, ";"):]
+	return p.command[strings.Index(p.command, ";")+1:]
 }

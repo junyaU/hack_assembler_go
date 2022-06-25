@@ -1,4 +1,4 @@
-package parser
+package hack_assembler_go
 
 type CommandType int
 
