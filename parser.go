@@ -29,7 +29,7 @@ func NewParser(f io.Reader) *Parser {
 			continue
 		}
 
-		rowTexts = append(rowTexts, text)
+		rowTexts = append(rowTexts, strings.TrimSpace(text))
 	}
 
 	return &Parser{
@@ -102,4 +102,9 @@ func (p Parser) Jump() string {
 	}
 
 	return p.command[strings.Index(p.command, ";")+1:]
+}
+
+func (p *Parser) ClearLoad() {
+	p.currentLine = 0
+	p.command = ""
 }

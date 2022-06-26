@@ -25,7 +25,7 @@ func (c *Code) WriteACommand(mnemonic string) error {
 	}
 
 	binary := strconv.FormatInt(parseNum, 2)
-	bitLength := 1
+	bitLength := 16
 	paddingZero := strings.Repeat("0", bitLength-len(binary))
 
 	c.result = append(c.result, []byte(paddingZero+binary))

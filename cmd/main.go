@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hack_assembler"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -29,35 +30,19 @@ func main() {
 	defer f.Close()
 
 	p := hack_assembler_go.NewParser(f)
+	table := hack_assembler_go.NewSymbolTable()
 	c := hack_assembler_go.NewCode()
 
-	for i := 0; i < len(p.Commands()); i++ {
-		if !p.HasMoreCommands() {
-			break
-		}
+	if err := DefineSymbol(p, table); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
-		p.Advance()
+	p.ClearLoad()
 
-		commandType, err := p.CommandType()
-		if err != nil {
-			fmt.Println("hack syntax error")
-			os.Exit(1)
-		}
-
-		switch commandType {
-		case hack_assembler_go.A_COMMAND:
-			if err := c.WriteACommand(p.Symbol()); err != nil {
-				fmt.Println("hack syntax error1")
-				os.Exit(1)
-			}
-		case hack_assembler_go.C_COMMAND:
-			if err := c.WriteCCommand(p.Dest(), p.Comp(), p.Jump()); err != nil {
-				fmt.Println("hack syntax error2")
-				fmt.Println(err)
-				os.Exit(1)
-			}
-		case hack_assembler_go.L_COMMAND:
-		}
+	if err := WriteBinaries(p, c, table); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	extensionIndex := strings.Index(fileName, ".asm")
@@ -72,12 +57,72 @@ func main() {
 	defer file.Close()
 
 	for _, binary := range c.BinaryResult() {
-		if _, err := file.Write(binary); err != nil {
-		}
-
+		file.Write(binary)
 		file.Write([]byte("\n"))
 	}
 
 	fmt.Println("success compile!!")
+}
 
+func DefineSymbol(p *hack_assembler_go.Parser, t *hack_assembler_go.SymbolTable) error {
+	currentFileLine := 0
+	for i := 0; i < len(p.Commands()); i++ {
+		if !p.HasMoreCommands() {
+			break
+		}
+
+		p.Advance()
+
+		commandType, err := p.CommandType()
+		if err != nil {
+			return err
+		}
+
+		if commandType != hack_assembler_go.L_COMMAND {
+			currentFileLine++
+		}
+
+		switch commandType {
+		case hack_assembler_go.A_COMMAND, hack_assembler_go.L_COMMAND:
+			if t.IsNonNumericSymbol(p.Symbol()) {
+				t.AddEntry(currentFileLine, p.Symbol(), commandType)
+			}
+		}
+	}
+
+	return nil
+}
+
+func WriteBinaries(p *hack_assembler_go.Parser, c *hack_assembler_go.Code, t *hack_assembler_go.SymbolTable) error {
+	for i := 0; i < len(p.Commands()); i++ {
+		if !p.HasMoreCommands() {
+			break
+		}
+
+		p.Advance()
+
+		commandType, err := p.CommandType()
+		if err != nil {
+			return err
+		}
+
+		switch commandType {
+		case hack_assembler_go.A_COMMAND:
+			symbol := p.Symbol()
+			if t.IsNonNumericSymbol(symbol) && t.Contains(symbol) {
+				address := strconv.Itoa(t.GetAddress(symbol))
+				symbol = address
+			}
+
+			if err := c.WriteACommand(symbol); err != nil {
+				return err
+			}
+
+		case hack_assembler_go.C_COMMAND:
+			if err := c.WriteCCommand(p.Dest(), p.Comp(), p.Jump()); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
